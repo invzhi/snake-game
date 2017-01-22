@@ -5,5 +5,6 @@ all: snake
 snake: src/main.c src/config.h
 	$(CC) src/main.c -o snake -lcurses
 
+.PHONY: clean
 clean:
-	rm snake
+	-$(RM) snake
