@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <curses.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -26,14 +27,18 @@ int initTUI(void);
 void initData(void);
 void gameLoop(void);
 
+WINDOW* displayPauseWin(int pauseGameWinRow, int pauseGameWinCol);
+WINDOW* displayGameOverWin(int gameOverWinRow, int gameOverWinCol);
+
 Snake* getSnake(void);
 Food* getFood(void);
-void drawSnake(void);
 void drawFood(void);
 void newFood(Food* food);
 
 void keyboardHandler(void);
 void pauseGame(void);
+void displaySnakeHead();
+void displayAchievement();
 
 int isSurvival(void);
 void snakeGrowth(void);
@@ -43,6 +48,7 @@ int main(int argc, char* argv[]) {
 	if (initTUI() == OK) {
 		initData();
 		gameLoop();
+		displayAchievement();
 	}
 	return EXIT_SUCCESS;
 }
@@ -53,7 +59,6 @@ void parseOption(int argc, char* argv[]) {
 	for (i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
 			puts(HELP_MANUAL);
-			exit(EXIT_SUCCESS);
 		} else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--speed") == 0) {
 			if (++i < argc) {
 				int speed = (int) strtol(argv[i], &endptr, 10);
@@ -63,7 +68,6 @@ void parseOption(int argc, char* argv[]) {
 				}
 			}
 			printf("fatal: \'%s\' is not a number in 1 - 10.\n", argv[i]);
-			exit(EXIT_SUCCESS);
 		} else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--length") == 0) {
 			if (++i < argc) {
 				int length = (int) strtol(argv[i], &endptr, 10);
@@ -73,12 +77,11 @@ void parseOption(int argc, char* argv[]) {
 				}
 			}
 			printf("fatal: \'%s\' is not a number in 2 - 100.\n", argv[i]);
-			exit(EXIT_SUCCESS);
 		// } else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--reset") == 0) {
 		} else {
 			printf("snake: \'%s\' is not a snake option. See \'snake --help\'.\n", argv[i]);
-			break;
 		}
+		exit(EXIT_SUCCESS);
 	}
 }
 
@@ -93,10 +96,10 @@ int initTUI(void) {
 	if (gameSpaceRow - 2 < 10 || gameSpaceCol / 2 - 1 < 10) {
 		status = ERR;
 		endwin();
-		puts("snake: Your window is smaller than 12 * 24.\nPlease enlarge it and try again.");
+		puts("snake: Your window is smaller than 13 * 22.\nPlease enlarge it and try again.");
 	} else {
 		gameSpace = subwin(stdscr, gameSpaceRow, gameSpaceCol, INFO_WINDOW_HEIGHT, 0);
-		mvprintw(0, 1, "Score: %*d", 4, 0);
+		mvprintw(0, 1, "Score: 0");
 		box(gameSpace, 0, 0);
 	}
 	return status;
@@ -112,20 +115,37 @@ void initData(void) {
 }
 
 void gameLoop(void) {
-	drawSnake();
 	drawFood();
 	while (isSurvival()) {
+		snakeGrowth();
 		wrefresh(gameSpace);
 		usleep(delayTime);
 		keyboardHandler();
-		snakeGrowth();
 	}
-	mvprintw(0, gameSpaceCol / 2 - 4, "GAME OVER");
-	refresh();
+	displaySnakeHead();
+	sleep(1);
+	displayGameOverWin(3, 13);
 	nodelay(stdscr, FALSE);
 	getch();
-	delwin(gameSpace);
 	endwin();
+}
+
+WINDOW* displayPauseWin(int pauseGameWinRow, int pauseGameWinCol) {
+	WINDOW* pauseGameWin = newwin(pauseGameWinRow, pauseGameWinCol, gameSpaceRow / 2 - pauseGameWinRow / 2, gameSpaceCol / 2 - pauseGameWinCol / 2);
+	box(pauseGameWin, 0, 0);
+	mvwprintw(pauseGameWin, 1, 2, "<p> to resume");
+	// mvwprintw(pauseGameWin, 2, 2, "<r> to restart");
+	mvwprintw(pauseGameWin, 3, 2, "<q> to quit");
+	wrefresh(pauseGameWin);
+	return pauseGameWin;
+}
+
+WINDOW* displayGameOverWin(int gameOverWinRow, int gameOverWinCol) {
+	WINDOW* gameOverWin = subwin(stdscr, gameOverWinRow, gameOverWinCol, gameSpaceRow / 2 - gameOverWinRow / 2, gameSpaceCol / 2 - gameOverWinCol / 2);
+	box(gameOverWin, 0, 0);
+	mvwprintw(gameOverWin, 1, 1, " GAME OVER ");
+	wrefresh(gameOverWin);
+	return gameOverWin;
 }
 
 Snake* getSnake(void) {
@@ -139,7 +159,7 @@ Snake* getSnake(void) {
 		if (i == 0)                   snake -> head = snakeNode;
 		if (i == snake -> length - 1) snake -> tail = snakeNode;
 		snakeNode -> y = gameSpaceRow / 2;
-		snakeNode -> x = 1 - 2 * i;
+		snakeNode -> x = -1 - 2 * i;
 		snakeNode -> next = preSnakeNode;
 		preSnakeNode = snakeNode;
 	}
@@ -153,16 +173,6 @@ Food* getFood(void) {
 		food -> x = (rand() % (gameSpaceCol - 2)) | 1;
 	} while (mvwinch(gameSpace, food -> y, food -> x) == snakeChar);
 	return food;
-}
-
-void drawSnake(void) {
-	SnakeNode* p = snake -> tail;
-	wattron(gameSpace, A_STANDOUT);
-	while (p) {
-		mvwprintw(gameSpace, p -> y, p -> x, BLOCK);
-		p = p -> next;
-	}
-	wattroff(gameSpace, A_STANDOUT);
 }
 
 void drawFood(void) {
@@ -179,41 +189,45 @@ void newFood(Food* food) {
 }
 
 void keyboardHandler(void) {
-	switch(getch()) {
-		case 'w':
-			if (snake -> direction != DOWN)  snake -> direction = UP;
-			break;
-		case 's':
-			if (snake -> direction != UP)    snake -> direction = DOWN;
-			break;
-		case 'a':
-			if (snake -> direction != RIGHT) snake -> direction = LEFT;
-			break;
-		case 'd':
-			if (snake -> direction != LEFT)  snake -> direction = RIGHT;
-			break;
-		case 'p':
-			pauseGame();
-			break;
-	}
+	static Direction direction;
+	do {
+		switch(getch()) {
+			case 'w':
+				direction = UP;
+				break;
+			case 's':
+				direction = DOWN;
+				break;
+			case 'a':
+				direction = LEFT;
+				break;
+			case 'd':
+				direction = RIGHT;
+				break;
+			case ERR:
+				return;
+			case 'p':
+				pauseGame();
+			default:
+				direction = snake -> direction;
+		}
+	} while ((snake -> direction & 2) == (direction & 2));
+	snake -> direction = direction;
 }
 
 void pauseGame(void) {
-	int status;
-	int pauseWinRow = 5, pauseWinCol = 18;
-	WINDOW* pauseWin = newwin(pauseWinRow, pauseWinCol, gameSpaceRow / 2 - pauseWinRow / 2, gameSpaceCol / 2 - pauseWinCol / 2);
-	box(pauseWin, 0, 0);
-	mvwprintw(pauseWin, 1, 2, "<p> to resume");
-	// mvwprintw(pauseWin, 2, 2, "<r> to restart");
-	mvwprintw(pauseWin, 3, 2, "<q> to quit");
-	wrefresh(pauseWin);
+	int isIllegal;
+	WINDOW* pauseGameWin = displayPauseWin(5, 18);
 	nodelay(stdscr, FALSE);
 	do {
-		status = 0;
+		isIllegal = 0;
 		switch(getch()) {
 			case 'p':
 				nodelay(stdscr, TRUE);
-				delwin(pauseWin);
+				mvwprintw(pauseGameWin, 1, 2, " 1s");
+				wrefresh(pauseGameWin);
+				sleep(1);
+				delwin(pauseGameWin);
 				touchwin(stdscr);
 				wrefresh(gameSpace);
 				break;
@@ -221,13 +235,26 @@ void pauseGame(void) {
 				
 			// 	break;
 			case 'q':
+				endwin();
+				displayAchievement();
 				exit(EXIT_SUCCESS);
-				break;
 			default:
-				status = 1;
+				isIllegal = 1;
 				break;
 		}
-	} while (status);
+	} while (isIllegal);
+}
+
+void displaySnakeHead() {
+	wattron(gameSpace, A_STANDOUT | A_DIM);
+	mvwprintw(gameSpace, snake -> head -> y, snake -> head -> x, BLOCK);
+	wattroff(gameSpace, A_STANDOUT | A_DIM);
+	wrefresh(gameSpace);
+}
+
+void displayAchievement() {
+	printf("Snake's length is %d.\n", snake -> length);
+	printf("Your score is %d.\n", score);
 }
 
 int isSurvival(void) {
@@ -240,12 +267,12 @@ int isSurvival(void) {
 }
 
 void snakeGrowth(void) {
-	SnakeNode* newSnakeNode;
+	static SnakeNode* newSnakeNode;
 	if (snake -> head -> y == food -> y && snake -> head -> x == food -> x) {
 		newSnakeNode = (SnakeNode*) malloc(sizeof(SnakeNode));
 		if (delayTime > MIN_DELAY_TIME) delayTime -= REDUCED_DELAY_TIME;
 		snake -> length++;
-		mvprintw(0, 8, "%*d", 4, ++score);
+		mvprintw(0, 8, "%d", ++score);
 		newFood(food);
 		drawFood();
 	} else {
