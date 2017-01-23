@@ -4,7 +4,7 @@ The snake game on Linux terminal.
 
 It was made by C and ncurses.
 
-![screenshot](https://github.com/inkzhi/Snake/tree/master/screenshots/Screenshot.png)
+![screenshot](https://github.com/inkzhi/Snake/blob/master/screenshots/Screenshot.png)
 
 ## What's New
 
