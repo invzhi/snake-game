@@ -13,7 +13,7 @@
 #define DEFAULT_SNAKE_DIRECTION RIGHT
 
 #define HELP_MANUAL                                      \
-	"SNAKE - the snake game in Linux terminal.\n"        \
+	"SNAKE - the snake game on terminal.\n"              \
 	"\n"                                                 \
 	"SYNOPSIS\n"                                         \
 	"\tsnake [OPTIONS]...\n"                             \
