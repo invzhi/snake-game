@@ -6,7 +6,7 @@
 #define INFO_WINDOW_HEIGHT      1
 
 #define MIN_DELAY_TIME          20000
-#define DEFAULT_DELAT_TIME      200000
+#define DEFAULT_DELAY_TIME      200000
 #define REDUCED_DELAY_TIME      1000
 
 #define DEFAULT_SNAKE_LENGTH    3

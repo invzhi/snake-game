@@ -11,7 +11,7 @@ int gameSpaceRow;
 int gameSpaceCol;
 
 int delayTime;
-int defaultDelayTime = DEFAULT_DELAT_TIME;
+int defaultDelayTime = DEFAULT_DELAY_TIME;
 int defaultSnakeLength = DEFAULT_SNAKE_LENGTH;
 
 int score;
@@ -37,8 +37,8 @@ void newFood(Food* food);
 
 void keyboardHandler(void);
 void pauseGame(void);
-void displaySnakeHead();
-void displayAchievement();
+void displaySnakeHead(void);
+void displayAchievement(void);
 
 int isSurvival(void);
 void snakeGrowth(void);
@@ -63,7 +63,7 @@ void parseOption(int argc, char* argv[]) {
 			if (++i < argc) {
 				int speed = (int) strtol(argv[i], &endptr, 10);
 				if (*endptr == '\0' && speed >= 1 && speed <= 10) {
-					defaultDelayTime = (11 - speed) * 20000;
+					defaultDelayTime = (MIN_DELAY_TIME - DEFAULT_DELAY_TIME) / 9 * speed + (10 * DEFAULT_DELAY_TIME - MIN_DELAY_TIME) / 9;
 					continue;
 				}
 			}
@@ -99,7 +99,7 @@ int initTUI(void) {
 		puts("snake: Your window is smaller than 13 * 22.\nPlease enlarge it and try again.");
 	} else {
 		gameSpace = subwin(stdscr, gameSpaceRow, gameSpaceCol, INFO_WINDOW_HEIGHT, 0);
-		mvprintw(0, 1, "Score: 0");
+		mvprintw(0, 1, "SCORE: 0");
 		box(gameSpace, 0, 0);
 	}
 	return status;
@@ -245,14 +245,14 @@ void pauseGame(void) {
 	} while (isIllegal);
 }
 
-void displaySnakeHead() {
+void displaySnakeHead(void) {
 	wattron(gameSpace, A_STANDOUT | A_DIM);
 	mvwprintw(gameSpace, snake -> head -> y, snake -> head -> x, BLOCK);
 	wattroff(gameSpace, A_STANDOUT | A_DIM);
 	wrefresh(gameSpace);
 }
 
-void displayAchievement() {
+void displayAchievement(void) {
 	printf("Snake's length is %d.\n", snake -> length);
 	printf("Your score is %d.\n", score);
 }
