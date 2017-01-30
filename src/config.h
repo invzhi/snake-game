@@ -1,9 +1,13 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#define BLOCK                   "  "
-
 #define INFO_WINDOW_HEIGHT      1
+
+#define BLOCK                   "  "
+#define EMPTY_ATTRIBUTES        A_NORMAL
+#define SNAKE_ATTRIBUTES        A_STANDOUT
+#define FOOD_ATTRIBUTES         A_STANDOUT | A_DIM
+#define IMPACT_ATTRIBUTES       A_STANDOUT | A_DIM
 
 #define MIN_DELAY_TIME          20000
 #define DEFAULT_DELAY_TIME      200000

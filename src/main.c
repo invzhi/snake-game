@@ -1,5 +1,5 @@
 #include <unistd.h>
-#include <curses.h>
+#include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,17 +27,16 @@ int initTUI(void);
 void initData(void);
 void gameLoop(void);
 
+void drawBlock(int attrs, int y, int x);
 WINDOW* displayPauseWin(int pauseGameWinRow, int pauseGameWinCol);
 WINDOW* displayGameOverWin(int gameOverWinRow, int gameOverWinCol);
 
 Snake* getSnake(void);
 Food* getFood(void);
-void drawFood(void);
 void newFood(Food* food);
 
 void keyboardHandler(void);
 void pauseGame(void);
-void displaySnakeHead(void);
 void displayAchievement(void);
 
 int isSurvival(void);
@@ -108,21 +107,22 @@ int initTUI(void) {
 void initData(void) {
 	srand((unsigned int) time(NULL));
 	score = 0;
-	snakeChar = 65568;
+	snakeChar = ' ' | SNAKE_ATTRIBUTES;
 	delayTime = defaultDelayTime;
 	snake = getSnake();
 	food = getFood();
 }
 
 void gameLoop(void) {
-	drawFood();
+	drawBlock(FOOD_ATTRIBUTES, food -> y, food -> x);
 	while (isSurvival()) {
 		snakeGrowth();
 		wrefresh(gameSpace);
 		usleep(delayTime);
 		keyboardHandler();
 	}
-	displaySnakeHead();
+	drawBlock(IMPACT_ATTRIBUTES, snake -> head -> y, snake -> head -> x);
+	wrefresh(gameSpace);
 	sleep(1);
 	displayGameOverWin(3, 13);
 	nodelay(stdscr, FALSE);
@@ -130,8 +130,13 @@ void gameLoop(void) {
 	endwin();
 }
 
+void drawBlock(int attrs, int y, int x) {
+	wattrset(gameSpace, attrs);
+	mvwprintw(gameSpace, y, x, BLOCK);
+}
+
 WINDOW* displayPauseWin(int pauseGameWinRow, int pauseGameWinCol) {
-	WINDOW* pauseGameWin = newwin(pauseGameWinRow, pauseGameWinCol, gameSpaceRow / 2 - pauseGameWinRow / 2, gameSpaceCol / 2 - pauseGameWinCol / 2);
+	WINDOW* pauseGameWin = newwin(pauseGameWinRow, pauseGameWinCol, (gameSpaceRow - pauseGameWinRow) / 2, (gameSpaceCol - pauseGameWinCol) / 2);
 	box(pauseGameWin, 0, 0);
 	mvwprintw(pauseGameWin, 1, 2, "<p> to resume");
 	// mvwprintw(pauseGameWin, 2, 2, "<r> to restart");
@@ -141,9 +146,9 @@ WINDOW* displayPauseWin(int pauseGameWinRow, int pauseGameWinCol) {
 }
 
 WINDOW* displayGameOverWin(int gameOverWinRow, int gameOverWinCol) {
-	WINDOW* gameOverWin = subwin(stdscr, gameOverWinRow, gameOverWinCol, gameSpaceRow / 2 - gameOverWinRow / 2, gameSpaceCol / 2 - gameOverWinCol / 2);
+	WINDOW* gameOverWin = newwin(gameOverWinRow, gameOverWinCol, (gameSpaceRow - gameOverWinRow) / 2, (gameSpaceCol - gameOverWinCol) / 2);
 	box(gameOverWin, 0, 0);
-	mvwprintw(gameOverWin, 1, 1, " GAME OVER ");
+	mvwprintw(gameOverWin, 1, 2, "GAME OVER");
 	wrefresh(gameOverWin);
 	return gameOverWin;
 }
@@ -173,12 +178,6 @@ Food* getFood(void) {
 		food -> x = (rand() % (gameSpaceCol - 2)) | 1;
 	} while (mvwinch(gameSpace, food -> y, food -> x) == snakeChar);
 	return food;
-}
-
-void drawFood(void) {
-	wattron(gameSpace, A_STANDOUT | A_DIM);
-	mvwprintw(gameSpace, food -> y, food -> x, BLOCK);
-	wattroff(gameSpace, A_STANDOUT | A_DIM);
 }
 
 void newFood(Food* food) {
@@ -245,13 +244,6 @@ void pauseGame(void) {
 	} while (isIllegal);
 }
 
-void displaySnakeHead(void) {
-	wattron(gameSpace, A_STANDOUT | A_DIM);
-	mvwprintw(gameSpace, snake -> head -> y, snake -> head -> x, BLOCK);
-	wattroff(gameSpace, A_STANDOUT | A_DIM);
-	wrefresh(gameSpace);
-}
-
 void displayAchievement(void) {
 	printf("Snake's length is %d.\n", snake -> length);
 	printf("Your score is %d.\n", score);
@@ -274,9 +266,9 @@ void snakeGrowth(void) {
 		snake -> length++;
 		mvprintw(0, 8, "%d", ++score);
 		newFood(food);
-		drawFood();
+		drawBlock(FOOD_ATTRIBUTES, food -> y, food -> x);
 	} else {
-		mvwprintw(gameSpace, snake -> tail -> y, snake -> tail -> x, BLOCK);
+		drawBlock(EMPTY_ATTRIBUTES, snake -> tail -> y, snake -> tail -> x);
 		newSnakeNode = snake -> tail;
 		snake -> tail = snake -> tail -> next;
 	}
@@ -302,7 +294,5 @@ void snakeGrowth(void) {
 	else if (snake -> head -> x == -1) snake -> head -> x = gameSpaceCol - 3;
 	else if (snake -> head -> y == gameSpaceRow - 1) snake -> head -> y = 1;
 	else if (snake -> head -> x == gameSpaceCol - 1) snake -> head -> x = 1;
-	wattron(gameSpace, A_STANDOUT);
-	mvwprintw(gameSpace, snake -> head -> y, snake -> head -> x, BLOCK);
-	wattroff(gameSpace, A_STANDOUT);
+	drawBlock(SNAKE_ATTRIBUTES, snake -> head -> y, snake -> head -> x);
 }
