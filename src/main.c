@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <getopt.h>
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,33 +54,44 @@ int main(int argc, char* argv[]) {
 }
 
 void parseOption(int argc, char* argv[]) {
-	char* endptr;
-	int i;
-	for (i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
-			puts(HELP_MANUAL);
-		} else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--speed") == 0) {
-			if (++i < argc) {
-				int speed = (int) strtol(argv[i], &endptr, 10);
+	char opt, *endptr;
+	int speed, length;
+	while ((opt = getopt_long(argc, argv, ":hs:l:", longopts, NULL)) != -1) {
+		switch (opt) {
+			case 'h':
+				puts(HELP_MANUAL);
+				exit(EXIT_SUCCESS);
+				break;
+			case 's':
+				speed = (int) strtol(optarg, &endptr, 10);
 				if (*endptr == '\0' && speed >= 1 && speed <= 10) {
 					defaultDelayTime = (MIN_DELAY_TIME - DEFAULT_DELAY_TIME) / 9 * speed + (10 * DEFAULT_DELAY_TIME - MIN_DELAY_TIME) / 9;
-					continue;
+					break;
+				} else {
+					printf("fatal: \'%s\' is not a value in 1 - 10.\n", optarg);
+					exit(EXIT_SUCCESS);
 				}
-			}
-			printf("fatal: \'%s\' is not a number in 1 - 10.\n", argv[i]);
-		} else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--length") == 0) {
-			if (++i < argc) {
-				int length = (int) strtol(argv[i], &endptr, 10);
+			case 'l':
+				length = (int) strtol(optarg, &endptr, 10);
 				if (*endptr == '\0' && length >= 1 && length <= 100) {
 					defaultSnakeLength = length;
-					continue;
+					break;
+				} else {
+					printf("fatal: \'%s\' is not a value in 2 - 100.\n", optarg);
+					exit(EXIT_SUCCESS);
 				}
-			}
-			printf("fatal: \'%s\' is not a number in 2 - 100.\n", argv[i]);
-		// } else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--reset") == 0) {
-		} else {
-			printf("snake: \'%s\' is not a snake option. See \'snake --help\'.\n", argv[i]);
+			case ':':
+				printf("fatal: option \'%c\' need a value.\n", optopt);
+				exit(EXIT_SUCCESS);
+				break;
+			case '?':
+				printf("snake: \'%s\' is not a snake option. See \'snake --help\'.\n", argv[optind]);
+				exit(EXIT_SUCCESS);
+				break;
 		}
+	}
+	if (optind < argc) {
+		printf("snake: \'%s\' is not a snake option. See \'snake --help\'.\n", argv[optind]);
 		exit(EXIT_SUCCESS);
 	}
 }
@@ -245,8 +257,8 @@ void pauseGame(void) {
 }
 
 void displayAchievement(void) {
-	printf("Snake's length is %d.\n", snake -> length);
-	printf("Your score is %d.\n", score);
+	printf("LENGTH:%5d\n", snake -> length);
+	printf("SCORE: %5d\n", score);
 }
 
 int isSurvival(void) {

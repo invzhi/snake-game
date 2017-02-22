@@ -1,6 +1,8 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#define _GNU_SOURCE
+
 #define INFO_WINDOW_HEIGHT      1
 
 #define BLOCK                   "  "
@@ -26,11 +28,18 @@
 	"\t-h, --help\n"                                     \
 	"\t\tSee help.\n"                                    \
 	"\n"                                                 \
-	"\t-s number, --speed number\n"                      \
-	"\t\tUse the number (1 - 10) as the game speed.\n"   \
+	"\t-s value, --speed value\n"                        \
+	"\t\tUse the value (1 - 10) as the game speed.\n"    \
 	"\n"                                                 \
-	"\t-l number, --length number\n"                     \
-	"\t\tUse the number (2 - 100) as the snake length."  \
+	"\t-l value, --length value\n"                       \
+	"\t\tUse the value (2 - 100) as the snake length."   \
+
+struct option longopts[] = {
+	{"help", 0, NULL, 'h'},
+	{"speed", 1, NULL, 's'},
+	{"length", 1, NULL, 'l'},
+	{0, 0, 0, 0},
+};
 
 typedef enum {
 	UP,
