@@ -1,6 +1,6 @@
 # snake
 
-[![license](https://img.shields.io/github/license/inkzhi/snake.svg)](./LICENSE)
+[![license](https://img.shields.io/github/license/invzhi/snake.svg)](LICENSE)
 
 Snake is a clone of easy name where the player maneuvers a snake which grows in length, with the snake itself being a primary obstacle. 
 
@@ -35,12 +35,12 @@ make
 
 ## Control
 
-| Key | Action |
-|:---:|:------:|
-| `w` |   UP   |
-| `a` |  LEFT  |
-| `s` |  DOWN  |
-| `d` |  RIGHT |
-| `p` |  pause |
+| Key  | Action |
+| :--: | :----: |
+| `w`  |   UP   |
+| `a`  |  LEFT  |
+| `s`  |  DOWN  |
+| `d`  | RIGHT  |
+| `p`  | pause  |
 
 To see some option: `./snake --help`
